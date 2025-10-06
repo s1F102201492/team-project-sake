@@ -9,6 +9,22 @@ services:
     depends_on:
       - mongo
 
+  frontend:
+    build: ./frontend
+    container_name: react_app
+    ports:
+      # PCの3000番ポートとコンテナの3000番ポートを繋ぐ
+      - "3000:3000"
+    volumes:
+      # PCのfrontendフォルダとコンテナの/appフォルダを同期する
+      # (これにより、コードを修正すると自動でブラウザが更新される)
+      - ./frontend:/app
+      # node_modulesは同期対象から除外(パフォーマンス向上のため)
+      - /app/node_modules
+    # Reactのホットリロードを正常に動作させるためのおまじない
+    stdin_open: true
+    tty: true
+
   mongo:
     image: mongo:6
     container_name: mongo
