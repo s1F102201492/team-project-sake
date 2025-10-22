@@ -6,8 +6,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    depends_on:
-      - mongo
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -25,14 +26,4 @@ services:
     stdin_open: true
     tty: true
 
-  mongo:
-    image: mongo:6
-    container_name: mongo
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
+volumes: {}
