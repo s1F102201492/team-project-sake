@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>スタンプラリーデモ</title>
+  <style>
+    #stampBook {
+      display: flex;        /* 横並びにする */
+      gap: 10px;            /* 画像間の隙間 */
+      list-style: none;     /* デフォルトのリストマーカーを消す */
+      padding: 0;
+      flex-wrap: wrap;      /* 画面幅に応じて折り返す */
+    }
+
+    #stampBook li {
+      display: flex;
+      flex-direction: column; /* 画像の下に名前を表示 */
+      align-items: center;
+    }
+
+    #stampBook img {
+      width: 50px;
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>スタンプラリーデモ</h1>
+  <button id="startBtn">位置情報の使用</button>
+  <button id="stopBtn">位置情報の使用を停止</button>
+  <p id="output"></p>
+
+  <h2>スタンプ帳</h2>
+  <ul id="stampBook"></ul>
+  <button id="resetBtn">スタンプ帳をリセット</button>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const output = document.getElementById("output");
+    const stampBookEl = document.getElementById("stampBook");
+
+    // チェックポイント（Django static 対応）
+    const checkpoints = [
+      { name: "Spot A", lat: 35.78922, lng: 139.71942, img: "{% static 'stamprally/StampA.png' %}" },
+      { name: "Spot B", lat: 35.7892096, lng: 139.7194752, img: "{% static 'stamprally/StampB.png' %}" }
+    ];
+
+    function toRad(deg) { return deg * Math.PI / 180; }
+
+    function getDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    let watchId = null;
+
+    // スタンプ帳を表示
+    function loadStampBook() {
+      const stamps = JSON.parse(localStorage.getItem("stampBook") || "[]");
+      stampBookEl.innerHTML = stamps.map(s => 
+        `<li><img src="${s.img}" alt="${s.name}"><br>${s.name}</li>`).join("");
+    }
+
+    // スタンプ登録
+    function registerStamp(cp) {
+      let stamps = JSON.parse(localStorage.getItem("stampBook") || "[]");
+      if (!stamps.some(s => s.name === cp.name)) {
+        stamps.push({ name: cp.name, img: cp.img });
+        localStorage.setItem("stampBook", JSON.stringify(stamps));
+        loadStampBook();
+      }
+    }
+
+    // スタンプ帳リセット
+    resetBtn.addEventListener("click", () => {
+      localStorage.removeItem("stampBook");
+      loadStampBook();
+    });
+
+    // 距離チェックとスタンプ表示
+    function checkStamps(position) {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      let message = `あなたの現在地: 緯度 ${userLat}, 経度 ${userLng}<br><br>`;
+
+      checkpoints.forEach(cp => {
+        const distance = getDistance(userLat, userLng, cp.lat, cp.lng);
+        const canGetStamp = distance <= 100;
+
+        if (canGetStamp) {
+          message += `${cp.name} は ${distance.toFixed(1)} m 以内 ✅ `;
+          message += `<button onclick="registerStamp(checkpoints.find(c => c.name==='${cp.name}'))">スタンプを押す！</button><br>`;
+        } else {
+          message += `${cp.name} は ${distance.toFixed(1)} m 離れています ❌ スタンプ取得不可<br>`;
+        }
+      });
+
+      output.innerHTML = message;
+    }
+
+    // 位置情報取得
+    startBtn.addEventListener("click", () => {
+      if (watchId !== null) return;
+      if (!navigator.geolocation) {
+        output.textContent = "このブラウザでは位置情報が取得できません。";
+        return;
+      }
+      watchId = navigator.geolocation.watchPosition(
+        checkStamps,
+        (error) => { output.textContent = `位置情報取得エラー: ${error.message}`; },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    });
+
+    // 位置情報停止
+    stopBtn.addEventListener("click", () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        output.innerHTML += "<br>位置情報の使用を停止しました。";
+      }
+    });
+
+    // 初期表示
+    loadStampBook();
+  </script>
+</body>
+</html>
