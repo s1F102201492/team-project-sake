@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'stamprally',
     'rest_framework',
     'event',
+    'api',
 ]
 
 MIDDLEWARE = [
