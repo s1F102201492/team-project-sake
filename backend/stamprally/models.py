@@ -5,11 +5,10 @@ class Checkpoint(models.Model):
     name = models.CharField(max_length=100)
     lat = models.FloatField()
     lng = models.FloatField()
-    img = models.CharField(max_length=200)
+    img = models.CharField(max_length=200)  # スタンプ画像のパスやURL
 
     def __str__(self):
         return self.name
-    
 
 class Stamp(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
