@@ -3,3 +3,4 @@ djangorestframework
 psycopg[binary]
 dj-database-url
 python-dotenv
+openai>=1.0.0
