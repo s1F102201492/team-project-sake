@@ -62,3 +62,24 @@ class RecommendedItem(models.Model):
     def __str__(self):
         sake_name = self.sake.name if self.sake else self.title
         return f"{sake_name} (Score: {self.score})"
+
+class Sake(models.Model):
+    name = models.CharField(max_length=100)
+    category = models.CharField(max_length=50)  # 例: 純米酒, 吟醸酒
+    description = models.TextField()
+    # AIレコメンド用の追加フィールド
+    region = models.CharField(max_length=100, blank=True)  # 産地・地域
+    brewery = models.ForeignKey(
+        "Brewery", on_delete=models.SET_NULL, null=True, blank=True, related_name="sakes")  # 酒蔵
+    sweetness_level = models.IntegerField(
+        null=True, blank=True, help_text="甘さの度合い（1:辛口 〜 5:甘口）")
+    aroma_level = models.IntegerField(
+        null=True, blank=True, help_text="香りの強さ（1:控えめ 〜 5:芳醇）")
+    alcohol_content = models.FloatField(
+        null=True, blank=True, help_text="アルコール度数")
+    price_range = models.CharField(
+        max_length=50, blank=True, help_text="価格帯（例: 1000-2000円）")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
