@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Wine } from 'lucide-react';
+import { Search, Wine } from 'lucide-react';
 import { EVENTS } from '../sampleData';
 import EventCard from '../components/EventCard';
 
