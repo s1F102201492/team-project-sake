@@ -1,25 +1,43 @@
-import logo from './logo.svg';
-import './App.css';
+import { createBrowserRouter, RouterProvider, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import Chat from './pages/Chat';
+import StampRally from './pages/StampRally';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+// 1. ルーティングの定義
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <div>
+        {/* ここにページの中身が表示される */}
+        <Home />
+      </div>
+    ),
+  },
+  {
+    path: "/chat",
+    element: (
+      <div>
+        {/* ここにページの中身が表示される */}
+        <Chat />
+      </div>
+    ),
+  },
+  {
+    path: "/stampRally",
+    element: (
+      <div>
+        {/* ここにページの中身が表示される */}
+        <StampRally />
+      </div>
+    ),
+  },
+  // ページがあれば追加していく
+]);
+
+// 2. アプリ全体にルーターを適用
+const App = () => {
+  return <RouterProvider router={router} />;
+};
 
 export default App;
