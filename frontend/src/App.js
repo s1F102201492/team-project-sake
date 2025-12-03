@@ -1,25 +1,38 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import Home from './pages/Home';
+import Chat from './pages/Chat';
+import StampRally from './pages/StampRally';
+import MainLayout from './layout/MainLayout';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+// 1. ルーティングの定義
+// Layoutコンポーネントを親ルート ("/") に設定し、
+// 各ページをその子ルート (children) として定義します。
+// これにより、Layout内の <Outlet /> の部分に子ページが表示されます。
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <MainLayout />, // ここで共通レイアウトを指定
+    children: [
+      {
+        index: true, // パスが "/" の時はHomeを表示
+        element: <Home />,
+      },
+      {
+        path: "chat", // "/chat"
+        element: <Chat />,
+      },
+      {
+        path: "stampRally", // "/stampRally"
+        element: <StampRally />,
+      },
+    ],
+  },
+]);
+
+// 2. アプリ全体にルーターを適用
+const App = () => {
+  return <RouterProvider router={router} />;
+};
 
 export default App;
