@@ -6,11 +6,11 @@ const Chat = () => {
   // 選択されたチャットグループを管理
   const [selectedGroup, setSelectedGroup] = useState(null);
 
-  // メッセージの状態管理（リストで管理）
+  // メッセージの状態管理（リストで管理、１つ１つはオブジェクト形式）
   const [messages, setMessages] = useState(MOCK_MESSAGES);
 
   // 入力テキストを管理
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
 
   // メッセージエリアのスクロール管理
   const messagesEndRef = useRef(null);
@@ -46,7 +46,7 @@ const Chat = () => {
         id: (Date.now() + 1).toString(),
         userId: 'u99',
         userName: 'システム',
-        avatar: '',
+        avatar: null,
         content: 'メッセージありがとうございます！(自動応答)',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isMe: false,
@@ -60,7 +60,7 @@ const Chat = () => {
       <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-100">
         {/* Chat Header */}
         <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shrink-0 shadow-sm">
-          <button 
+          <button
             onClick={() => setSelectedGroup(null)}
             className="p-1 -ml-1 hover:bg-slate-100 rounded-full text-slate-500"
           >
@@ -78,16 +78,16 @@ const Chat = () => {
           <div className="text-center text-xs text-slate-400 my-4">
             <span>2024年10月12日</span>
           </div>
-          
+
           {messages.map(msg => (
-            <div 
-              key={msg.id} 
+            <div
+              key={msg.id}
               className={`flex gap-2 ${msg.isMe ? 'flex-row-reverse' : ''}`}
             >
               {!msg.isMe && (
-                <img 
-                  src={msg.avatar} 
-                  alt={msg.userName} 
+                <img
+                  src={msg.avatar}
+                  alt={msg.userName}
                   className="w-8 h-8 rounded-full bg-slate-200 mt-1"
                 />
               )}
@@ -95,12 +95,11 @@ const Chat = () => {
                 {!msg.isMe && (
                   <span className="text-[10px] text-slate-500 mb-0.5 ml-1">{msg.userName}</span>
                 )}
-                <div 
-                  className={`px-3 py-2 rounded-2xl text-sm ${
-                    msg.isMe 
-                      ? 'bg-indigo-600 text-white rounded-br-none' 
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
-                  }`}
+                <div
+                  className={`px-3 py-2 rounded-2xl text-sm ${msg.isMe
+                    ? 'bg-indigo-600 text-white rounded-br-none'
+                    : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
+                    }`}
                 >
                   {msg.content}
                 </div>
@@ -117,7 +116,7 @@ const Chat = () => {
             <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
               <ImageIcon size={20} />
             </button>
-            <textarea 
+            <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="メッセージを入力"
@@ -130,14 +129,13 @@ const Chat = () => {
                 }
               }}
             />
-            <button 
+            <button
               onClick={handleSend}
               disabled={!inputText.trim()}
-              className={`p-2 rounded-full transition-colors ${
-                inputText.trim() 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'bg-slate-200 text-slate-400'
-              }`}
+              className={`p-2 rounded-full transition-colors ${inputText.trim()
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-slate-200 text-slate-400'
+                }`}
             >
               <Send size={18} />
             </button>
@@ -157,15 +155,15 @@ const Chat = () => {
 
       <div className="space-y-2">
         {CHAT_GROUPS.map(group => (
-          <div 
+          <div
             key={group.id}
             onClick={() => setSelectedGroup(group)}
             className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm active:bg-slate-50 transition-colors cursor-pointer"
           >
             <div className="relative">
-              <img 
-                src={group.eventImage} 
-                alt={group.eventName} 
+              <img
+                src={group.eventImage}
+                alt={group.eventName}
                 className="w-12 h-12 rounded-full object-cover"
               />
               {group.unreadCount > 0 && (
