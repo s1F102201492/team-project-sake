@@ -1,6 +1,7 @@
 # api/models.py
 from django.db import models
 from django.conf import settings  # Django標準のUserモデルを利用
+from pgvector.django import VectorField
 
 
 class Sake(models.Model):
@@ -10,16 +11,26 @@ class Sake(models.Model):
     # AIレコメンド用の追加フィールド
     region = models.CharField(max_length=100, blank=True)  # 産地・地域
     brewery = models.ForeignKey(
-        "Brewery", on_delete=models.SET_NULL, null=True, blank=True, related_name="sakes")  # 酒蔵
+        "Brewery",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sakes",
+    )  # 酒蔵
     sweetness_level = models.IntegerField(
-        null=True, blank=True, help_text="甘さの度合い（1:辛口 〜 5:甘口）")
+        null=True, blank=True, help_text="甘さの度合い（1:辛口 〜 5:甘口）"
+    )
     aroma_level = models.IntegerField(
-        null=True, blank=True, help_text="香りの強さ（1:控えめ 〜 5:芳醇）")
+        null=True, blank=True, help_text="香りの強さ（1:控えめ 〜 5:芳醇）"
+    )
     alcohol_content = models.FloatField(
-        null=True, blank=True, help_text="アルコール度数")
+        null=True, blank=True, help_text="アルコール度数"
+    )
     price_range = models.CharField(
-        max_length=50, blank=True, help_text="価格帯（例: 1000-2000円）")
+        max_length=50, blank=True, help_text="価格帯（例: 1000-2000円）"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -49,12 +60,9 @@ class Event(models.Model):
 
 
 class Review(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
-    sake = models.ForeignKey(
-        "Sake", on_delete=models.CASCADE, null=True, blank=True)
-    event = models.ForeignKey(
-        "Event", on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    sake = models.ForeignKey("Sake", on_delete=models.CASCADE, null=True, blank=True)
+    event = models.ForeignKey("Event", on_delete=models.CASCADE, null=True, blank=True)
     rating = models.IntegerField()  # 例: 1〜5の5段階評価
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
