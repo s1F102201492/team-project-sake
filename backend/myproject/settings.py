@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "event",
     "api",
     "ai_recommend",
+    "users",
+    
 ]
 
 MIDDLEWARE = [
