@@ -3,134 +3,230 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name = "viewport" content = "width=device-width, initial-scale = 1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
   <title>スタンプラリーデモ</title>
   <style>
-    #stampBook {
+    /* 本アイコン */
+    #stampIcon {
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    #stampIcon.clicked { transform: scale(0.9); }
+
+    /* モーダル */
+    #stampBookModal {
+      display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: url("{% static 'stamprally/wood.jpg' %}") no-repeat center center;
+    background-size: cover;  /* 全体にフィットさせる */
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 1000;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+
+    #stampBookModal ul {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       list-style: none;
       padding: 0;
     }
-    #stampBook li {
+
+    #stampBookModal li {
       display: flex;
       flex-direction: column;
       align-items: center;
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
     }
-    #stampBook img {
+
+    #stampBookModal img {
       width: 50px;
       height: 50px;
     }
+
+    /* オーバーレイ */
+    #overlay {
+      display: none;
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 900;
+    }
+
+    /* ×ボタン */
+    #closeModal.closeBtn {
+      border:none;
+      background:none;
+      font-size:24px;
+      font-weight:bold;
+      cursor:pointer;
+      position:absolute;
+      top:10px; right:10px;
+      color:#333;
+    }
+    #closeModal.closeBtn:hover { color:#f00; }
   </style>
 </head>
 <body>
   <h1>スタンプラリーデモ</h1>
-  <button id="startBtn">位置情報の使用</button>
-  <button id="stopBtn">位置情報の使用を停止</button>
+  <button id="startBtn" class = "btn btn-secondary">位置情報の使用</button>
+  <button id="stopBtn" class = "btn btn-secondary">位置情報の使用を停止</button>
   <p id="output"></p>
 
-  <h2>スタンプ帳</h2>
-  <ul id="stampBook"></ul>
-  <button id="resetBtn">スタンプ帳をリセット</button>
+  <!-- 本アイコン -->
+  <img src="{% static 'stamprally/book_icon.png' %}" id="stampIcon" alt="スタンプ帳">
+
+  <!-- モーダル & オーバーレイ -->
+  <div id="overlay"></div>
+  <div id="stampBookModal">
+    <button id="closeModal" class="closeBtn">&times;</button>
+    <h2>スタンプ帳</h2>
+    <ul id="stampBook"></ul>
+    <button id="resetBtn" class = "btn btn-warning">スタンプ帳をリセット</button>
+  </div>
+
+  <!-- チェックポイント読み込み -->
+  <script src="{% static 'stamprally/checkpoint.js' %}"></script>
 
   <script>
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
-    const resetBtn = document.getElementById("resetBtn");
     const output = document.getElementById("output");
+    const stampIcon = document.getElementById("stampIcon");
+    const stampModal = document.getElementById("stampBookModal");
+    const overlay = document.getElementById("overlay");
+    const closeModal = document.getElementById("closeModal");
+    const resetBtn = document.getElementById("resetBtn");
     const stampBookEl = document.getElementById("stampBook");
 
-    // 仮のチェックポイント
-    const checkpoints = [
-      { id: 1, name: "Spot A", lat: 35.78922, lng: 139.71942, img: "{% static 'stamprally/StampA.png' %}" },
-      { id: 2, name: "Spot B", lat: 35.7892096, lng: 139.7194752, img: "{% static 'stamprally/StampB.png' %}" }
-    ];
-
-    function toRad(deg) { return deg * Math.PI / 180; }
-
-    function getDistance(lat1, lng1, lat2, lng2) {
+    function toRad(deg){ return deg * Math.PI / 180; }
+    function getDistance(lat1,lng1,lat2,lng2){
       const R = 6371000;
-      const dLat = toRad(lat2 - lat1);
-      const dLng = toRad(lng2 - lng1);
+      const dLat = toRad(lat2-lat1);
+      const dLng = toRad(lng2-lng1);
       const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+      const c = 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+      return R*c;
     }
 
     let watchId = null;
 
-    // スタンプ帳の表示
-    function loadStampBook() {
+    // スタンプ帳ロード
+    function loadStampBook(){
       const stamps = JSON.parse(localStorage.getItem("stampBook") || "[]");
-      stampBookEl.innerHTML = checkpoints.map(cp => {
-        const obtained = stamps.some(s => s.id === cp.id);
-        return `<li>${cp.name}: ${obtained ? `<img src="${cp.img}">` : '白紙'}</li>`;
+      stampBookEl.innerHTML = checkpoints.map(cp=>{
+        const obtained = stamps.some(s=>s.id===cp.id);
+        return `<li>${cp.name}: ${obtained ? `<img src="${cp.img}">`:'白紙'}
+          ${obtained ? '' : `<button class = "btn btn-secondary" onclick="registerStamp(checkpoints.find(c=>c.id===${cp.id}))">押す</button>`}</li>`;
       }).join("");
     }
 
-    // スタンプを登録
-    function registerStamp(cp) {
+    // スタンプ登録
+    function registerStamp(cp){
       let stamps = JSON.parse(localStorage.getItem("stampBook") || "[]");
-      if (!stamps.some(s => s.id === cp.id)) {
-        stamps.push({ id: cp.id, name: cp.name, img: cp.img });
-        localStorage.setItem("stampBook", JSON.stringify(stamps));
+      if(!stamps.some(s=>s.id===cp.id)){
+        stamps.push({id:cp.id,name:cp.name,img:cp.img});
+        localStorage.setItem("stampBook",JSON.stringify(stamps));
         loadStampBook();
       }
     }
 
-    // スタンプ帳リセット
-    resetBtn.addEventListener("click", () => {
+    resetBtn.addEventListener("click",()=>{
       localStorage.removeItem("stampBook");
       loadStampBook();
     });
 
-    // 距離チェックとスタンプ表示
-    function checkStamps(position) {
+    async function checkStamps(position){
       const userLat = position.coords.latitude;
       const userLng = position.coords.longitude;
 
-      let message = `あなたの現在地: 緯度 ${userLat}, 経度 ${userLng}<br><br>`;
-
-      checkpoints.forEach(cp => {
-        const distance = getDistance(userLat, userLng, cp.lat, cp.lng);
-        const canGetStamp = distance <= 100; // 100m以内で押せる
-
-        if (canGetStamp) {
-          message += `${cp.name} は ${distance.toFixed(1)} m 以内 ✅ `;
-          message += `<button onclick="registerStamp(checkpoints.find(c => c.id===${cp.id}))">スタンプを押す！</button><br>`;
-        } else {
-          message += `${cp.name} は ${distance.toFixed(1)} m 離れています ❌<br>`;
+      let locationName = `緯度 ${userLat}, 経度 ${userLng}`;
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLng}`);
+        if(res.ok){
+          const data = await res.json();
+          const state = data.address.state||"";
+          const city = data.address.city||data.address.town||data.address.village||"";
+          locationName = `${state}${city}`;
         }
+      }catch(e){console.log("住所取得エラー:",e);}
+
+      const stamps = JSON.parse(localStorage.getItem("stampBook")||"[]");
+      const canGetStamps = [];
+      const notYetStamps = [];
+
+      checkpoints.forEach(cp=>{
+        const obtained = stamps.some(s=>s.id===cp.id);
+        const distance = getDistance(userLat,userLng,cp.lat,cp.lng);
+        if(obtained && distance<=100) canGetStamps.push({...cp,distance});
+        else if(!obtained) notYetStamps.push({...cp,distance});
+      });
+
+      let nearestNotYet = null;
+      if(notYetStamps.length>0){
+        nearestNotYet = notYetStamps.reduce((prev,curr)=>curr.distance<prev.distance?curr:prev);
+      }
+
+      let displayStamps=[];
+      if(canGetStamps.length===0){ if(nearestNotYet) displayStamps.push(nearestNotYet); }
+      else if(canGetStamps.length===1){ displayStamps.push(canGetStamps[0]); if(nearestNotYet) displayStamps.push(nearestNotYet); }
+      else{ displayStamps.push(...canGetStamps); if(nearestNotYet) displayStamps.push(nearestNotYet); }
+
+      let message = `あなたの現在地: ${locationName}<br><br>`;
+      displayStamps.forEach(cp=>{
+        const distance = getDistance(userLat,userLng,cp.lat,cp.lng);
+        const canGetStamp = distance<=100;
+        message += `${cp.name} は ${distance.toFixed(1)} m ${canGetStamp ? "以内 ✅" : "離れています ❌"}<br>`;
       });
 
       output.innerHTML = message;
     }
 
-    // 位置情報取得
-    startBtn.addEventListener("click", () => {
-      if (watchId !== null) return;
-      if (!navigator.geolocation) {
-        output.textContent = "このブラウザでは位置情報が取得できません。";
-        return;
-      }
-      watchId = navigator.geolocation.watchPosition(
-        checkStamps,
-        (error) => { output.textContent = `位置情報取得エラー: ${error.message}`; },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-      );
+    startBtn.addEventListener("click",()=>{
+      if(watchId!==null) return;
+      if(!navigator.geolocation){ output.textContent="このブラウザでは位置情報取得不可"; return; }
+      watchId = navigator.geolocation.watchPosition(checkStamps,
+        err=>{ output.textContent=`位置情報取得エラー: ${err.message}`; },
+        { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
     });
 
-    // 位置情報停止
-    stopBtn.addEventListener("click", () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-        output.innerHTML += "<br>位置情報の使用を停止しました。";
-      }
+    stopBtn.addEventListener("click",()=>{
+      if(watchId!==null) navigator.geolocation.clearWatch(watchId); watchId=null;
+      output.innerHTML+="<br>位置情報の使用を停止しました。";
     });
 
-    // 初期表示
+    // モーダル表示
+    stampIcon.addEventListener("click",()=>{ 
+      stampModal.style.display="block"; overlay.style.display="block"; loadStampBook();
+    });
+    closeModal.addEventListener("click",()=>{
+      stampModal.style.display="none"; overlay.style.display="none";
+    });
+    overlay.addEventListener("click",()=>{
+      stampModal.style.display="none"; overlay.style.display="none";
+    });
+
+    stampIcon.addEventListener("mousedown",()=>{ stampIcon.classList.add("clicked"); });
+    stampIcon.addEventListener("mouseup",()=>{ stampIcon.classList.remove("clicked"); });
+    stampIcon.addEventListener("mouseleave",()=>{ stampIcon.classList.remove("clicked"); });
+
     loadStampBook();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 </body>
 </html>

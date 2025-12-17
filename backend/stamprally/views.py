@@ -8,6 +8,13 @@ def index(request):
     stamps = Stamp.objects.filter(user_supa_id=request.user_supa_id)
     obtained_ids = [s.checkpoint.id for s in stamps]
     
+    # ログインなしの場合は空リスト
+    if request.user.is_authenticated:
+        stamps = Stamp.objects.filter(user=request.user)
+        obtained_ids = [s.checkpoint.id for s in stamps]
+    else:
+        obtained_ids = []  # ダミー: まだ何も押されていない状態
+
     context = {
         "checkpoints": checkpoints,
         "obtained_ids": obtained_ids,
