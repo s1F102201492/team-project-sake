@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from .models import Checkpoint, Stamp
-from django.contrib.auth.decorators import login_required
+from api.auth import require_supabase_auth
 
-@login_required
+@require_supabase_auth
 def index(request):
     checkpoints = Checkpoint.objects.all()
-    stamps = Stamp.objects.filter(user=request.user)
+    stamps = Stamp.objects.filter(user_supa_id=request.user_supa_id)
     obtained_ids = [s.checkpoint.id for s in stamps]
     
     context = {

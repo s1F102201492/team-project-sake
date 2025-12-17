@@ -6,8 +6,8 @@ class Event(models.Model):
     description = models.TextField()
     start_at = models.DateTimeField()
     venue = models.CharField(max_length=200)  # 開催場所
-    organizer = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    organizer_supa_id = models.CharField(
+        max_length=255, db_index=True, help_text="Supabase User ID"
     )  # 主催者
     sakes_featured = models.ManyToManyField(
         "api.Sake", blank=True
@@ -18,7 +18,7 @@ class Event(models.Model):
 
 
 class Review(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user_supa_id = models.CharField(max_length=255, db_index=True, help_text="Supabase User ID")
     sake = models.ForeignKey("api.Sake", on_delete=models.CASCADE, null=True, blank=True)
     event = models.ForeignKey("Event", on_delete=models.CASCADE, null=True, blank=True)
     rating = models.IntegerField()  # 例: 1〜5の5段階評価
