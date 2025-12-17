@@ -10,7 +10,7 @@ class Event(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE
     )  # 主催者
     sakes_featured = models.ManyToManyField(
-        "Sake", blank=True
+        "api.Sake", blank=True
     )  # イベントで提供されるお酒
 
     def __str__(self):
@@ -19,7 +19,7 @@ class Event(models.Model):
 
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    sake = models.ForeignKey("Sake", on_delete=models.CASCADE, null=True, blank=True)
+    sake = models.ForeignKey("api.Sake", on_delete=models.CASCADE, null=True, blank=True)
     event = models.ForeignKey("Event", on_delete=models.CASCADE, null=True, blank=True)
     rating = models.IntegerField()  # 例: 1〜5の5段階評価
     comment = models.TextField()
