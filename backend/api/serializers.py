@@ -7,7 +7,7 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = '__all__'
 
-class StampRallySerializer(serializers.ModelSerializer):
+class StampSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StampRally
+        model = Stamp
         fields = '__all__'
