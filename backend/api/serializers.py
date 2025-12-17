@@ -1,13 +1,14 @@
 from rest_framework import serializers
-from event.models import Event
-from stamprally.models import Checkpoint, Stamp
+from .models import Sake, Brewery
 
-class EventSerializer(serializers.ModelSerializer):
+class BrewerySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Event
+        model = Brewery
         fields = '__all__'
 
-class StampSerializer(serializers.ModelSerializer):
+class SakeSerializer(serializers.ModelSerializer):
+    brewery = BrewerySerializer(read_only=True)
+    
     class Meta:
-        model = Stamp
+        model = Sake
         fields = '__all__'
