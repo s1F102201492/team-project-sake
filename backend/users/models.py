@@ -6,7 +6,7 @@ class User(models.Model):
 
     id = models.UUIDField(primary_key=True)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
+    username = models.CharField(max_length=128)
     prefecture = models.CharField(max_length=64, blank=True)
     avatar_url = models.URLField(blank=True)
 
