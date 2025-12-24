@@ -1,8 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
+import { supabase } from '../supabase'; // ★Supabaseをインポート
+import { LogIn, User as UserIcon } from 'lucide-react'; // アイコン追加
 
 const MainLayout = () => {
+  const [session, setSession] = useState(null);
+
+  // ★ログイン状態を監視
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       {/* Header */}
@@ -14,20 +31,35 @@ const MainLayout = () => {
             </div>
             <span className="font-bold text-xl text-slate-800 tracking-tight">Saketabi</span>
           </Link>
-          <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
-             <img src="https://picsum.photos/100/100?random=user" alt="User" />
-          </div>
+
+          {/* 修正: ログイン状態による出し分け */}
+          {session ? (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200">
+                <UserIcon size={18} className="text-indigo-700" />
+              </div>
+              {/* ↓これを追加：登録したユーザー名を表示 */}
+              <span className="text-sm font-bold text-slate-700">
+                {session.user.user_metadata.username || 'ゲスト'}
+              </span>
+            </div>
+          ) : (
+            <Link to="/login" className="flex items-center gap-1 text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">
+              <LogIn size={16} />
+              ログイン
+            </Link>
+          )}
         </div>
-      </header>
+      </header >
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto pb-20">
+      < main className="flex-1 max-w-3xl w-full mx-auto pb-20" >
         <Outlet />
-      </main>
+      </main >
 
       {/* Bottom Navigation */}
-      <BottomNavigation />
-    </div>
+      < BottomNavigation />
+    </div >
   );
 };
 
