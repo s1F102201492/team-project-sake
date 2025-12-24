@@ -2,6 +2,7 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './pages/Home';
 import Chat from './pages/Chat';
+import Login from './pages/Login';
 import StampRally from './pages/StampRally';
 import MainLayout from './layout/MainLayout';
 
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
       {
         path: "stampRally", // "/stampRally"
         element: <StampRally />,
+      },
+      {
+        path: "login",
+        element: <Login />,
       },
     ],
   },
