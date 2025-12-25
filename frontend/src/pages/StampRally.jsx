@@ -25,22 +25,6 @@ const StampRally = () => {
     <div className="p-4 min-h-screen bg-slate-50">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-800">御酒印帳</h1>
-        <div className="bg-white rounded-lg p-1 flex border border-slate-200">
-          <button
-            onClick={() => setActiveTab('card')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'card' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500'
-              }`}
-          >
-            カード
-          </button>
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'map' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500'
-              }`}
-          >
-            マップ
-          </button>
-        </div>
       </div>
 
       {/* Progress Card */}
@@ -77,6 +61,13 @@ const StampRally = () => {
         <Gift size={18} className="text-indigo-600" />
         スタンプを集めて特典と交換する
       </Link>
+
+      {/*　場所カードの表示順 
+      1.チェックインしてないかつ近いもの
+      2.チェックイン済
+      3.チェックインしてないかつ遠いもの
+      の順で表示
+      */}
 
       {activeTab === 'card' ? (
         <div className="grid grid-cols-2 gap-4">
