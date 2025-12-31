@@ -20,3 +20,14 @@ class MessageViewSet(viewsets.ModelViewSet):
             ).order_by('created_at')
         
         return queryset
+
+    def perform_create(self, serializer):
+        sender_id = serializer.validated_data.get('sender_id')
+        receiver_id = serializer.validated_data.get('receiver_id')
+        
+        from django.contrib.auth.models import User
+        
+        sender, _ = User.objects.get_or_create(username=sender_id)
+        receiver, _ = User.objects.get_or_create(username=receiver_id)
+        
+        serializer.save(sender_user=sender, receiver_user=receiver)

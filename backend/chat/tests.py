@@ -22,7 +22,14 @@ class MessageTests(APITestCase):
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Message.objects.count(), 4)
-        self.assertEqual(Message.objects.latest('created_at').content, 'New Message')
+        
+        # Verify User linking
+        latest_msg = Message.objects.latest('created_at')
+        self.assertEqual(latest_msg.content, 'New Message')
+        self.assertIsNotNone(latest_msg.sender_user)
+        self.assertIsNotNone(latest_msg.receiver_user)
+        self.assertEqual(latest_msg.sender_user.username, 'userA')
+        self.assertEqual(latest_msg.receiver_user.username, 'userB')
 
     def test_get_messages_filtered(self):
         """
