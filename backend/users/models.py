@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class User(models.Model):
+class Users(models.Model):
     """Supabase の public.user に対応するユーザープロフィール。"""
 
     id = models.UUIDField(primary_key=True)
@@ -11,9 +11,9 @@ class User(models.Model):
     avatar_url = models.URLField(blank=True)
 
     class Meta:
-        db_table = "user"
-        verbose_name = "ユーザー"
-        verbose_name_plural = "ユーザー"
+        db_table = "Users"
+        verbose_name = "Users"
+        verbose_name_plural = "Users"
 
     def __str__(self):
         return self.email
