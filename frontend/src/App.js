@@ -2,8 +2,10 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './pages/Home';
 import Chat from './pages/Chat';
+import Login from './pages/Login';
 import StampRally from './pages/StampRally';
 import MainLayout from './layout/MainLayout';
+import Rewards from './pages/Rewards';
 
 // 1. ルーティングの定義
 // Layoutコンポーネントを親ルート ("/") に設定し、
@@ -25,6 +27,14 @@ const router = createBrowserRouter([
       {
         path: "stampRally", // "/stampRally"
         element: <StampRally />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "rewards",
+        element: <Rewards />,
       },
     ],
   },

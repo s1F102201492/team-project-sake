@@ -2,10 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { UserProfileProvider } from './contexts/UserProfileContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <UserProfileProvider>
+      <App />
+    </UserProfileProvider>
   </React.StrictMode>
 );
