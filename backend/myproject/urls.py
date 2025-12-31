@@ -21,4 +21,5 @@ urlpatterns = [
     path('stamprally/', include('stamprally.urls')),
     path('ai_recommend/', include('ai_recommend.urls')),
     path('api/', include('api.urls')),
+    path('chat/', include('chat.urls')),
 ]
