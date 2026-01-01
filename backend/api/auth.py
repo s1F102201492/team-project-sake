@@ -7,7 +7,7 @@ from django.http import JsonResponse
 
 import base64
 import json
-from django.contrib.auth.models import User
+from users.models import Users
 
 def get_user_id_from_token(request):
     """
@@ -54,7 +54,7 @@ def get_user_id_from_token(request):
 def require_supabase_auth(view_func):
     """
     Decorator to ensure the request has a valid Supabase token.
-    Exposes `request.user_supa_id` AND `request.user` (Django User) to the view.
+    Exposes `request.user_supa_id` AND `request.user` (Supabase Users) to the view.
     """
     def _wrapped_view(request, *args, **kwargs):
         user_id = get_user_id_from_token(request)
@@ -62,17 +62,16 @@ def require_supabase_auth(view_func):
             return JsonResponse({"error": "Unauthorized: Missing or Valid Supabase Token required"}, status=401)
         
         request.user_supa_id = user_id
-        
-        # User Sync Logic
-        # Supabase IDに基づいてDjangoユーザーを取得・作成し、request.userにセットする
-        try:
-            user, created = User.objects.get_or_create(username=user_id)
-            request.user = user
-        except Exception as e:
-            # DBエラー等が発生しても、最低限 user_supa_id は使えるようにする？
-            # いや、Userリンクが要件なのでエラーにする方が安全
-            print(f"User Sync Error: {e}")
-            return JsonResponse({"error": "User synchronization failed"}, status=500)
+
+        # Supabase Usersテーブルを参照。存在しない場合は匿名扱いで通す。
+        user_obj = Users.objects.filter(id=user_id).first()
+        if user_obj:
+            # django.contrib.auth.User 互換の簡易フラグを持たせておく
+            setattr(user_obj, "is_authenticated", True)
+            request.user = user_obj
+        else:
+            # is_authenticated を持つ匿名オブジェクトで落ちないようにする
+            request.user = type("AnonymousUsers", (), {"is_authenticated": False})()
 
         return view_func(request, *args, **kwargs)
         

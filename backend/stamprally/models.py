@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from users.models import Users
 
 class Checkpoint(models.Model):
     name = models.CharField(max_length=100)
@@ -12,7 +12,7 @@ class Checkpoint(models.Model):
 
 class Stamp(models.Model):
     user_supa_id = models.CharField(max_length=255, db_index=True, help_text="Supabase User ID", null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     obtained_at = models.DateTimeField(auto_now_add=True)
 

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "api",
     "ai_recommend",
     "chat",
+    "users",
 ]
 
 MIDDLEWARE = [
