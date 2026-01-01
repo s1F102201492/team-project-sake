@@ -1,27 +1,52 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MapPin, Award, CheckCircle2, Navigation, Gift } from 'lucide-react';
-import { STAMP_SPOTS } from '../sampleData';
 import { Link } from 'react-router-dom';
+import { useStampCheckpoints, useUserStamps, useAcquireStamp } from '../hooks/useStampRallyApi';
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 const StampRally = () => {
-  const [spots, setSpots] = useState(STAMP_SPOTS);
   const [activeTab, setActiveTab] = useState('card');
 
-  const { session, profile, loading, error, logout } = useUserProfile();
+  const { session, profile, loading: profileLoading } = useUserProfile();
+  const { checkpoints, loading: cpLoading, error: cpError, refetch: refetchCp } = useStampCheckpoints();
+  const { stamps, loading: stLoading, error: stError, refetch: refetchSt } = useUserStamps();
+  const { acquireStamp, loading: acqLoading, error: acqError } = useAcquireStamp();
+
+  const spots = useMemo(() => {
+    const obtainedById = new Map();
+    stamps.forEach(s => {
+      if (s.checkpoint) {
+        obtainedById.set(s.checkpoint, s);
+      }
+    });
+    return checkpoints.map(cp => {
+      const obtained = obtainedById.get(cp.id);
+      return {
+        id: cp.id,
+        name: cp.name,
+        image: cp.img || 'https://placehold.jp/200x200.png',
+        prefecture: '', // データに無いので空にしておく
+        collected: Boolean(obtained),
+        collectedAt: obtained?.obtained_at ? new Date(obtained.obtained_at).toLocaleDateString() : '',
+      };
+    });
+  }, [checkpoints, stamps]);
 
   const collectedCount = spots.filter(s => s.collected).length;
-  const progress = (collectedCount / spots.length) * 100;
+  const progress = spots.length > 0 ? (collectedCount / spots.length) * 100 : 0;
 
-  const handleCheckIn = (id) => {
-    // In a real app, this would check geolocation
-    setSpots(prev => prev.map(spot => {
-      if (spot.id === id) {
-        return { ...spot, collected: true, collectedAt: new Date().toLocaleDateString() };
-      }
-      return spot;
-    }));
-    alert('スタンプゲット！\nおめでとうございます🍶');
+  const handleCheckIn = async (id) => {
+    try {
+      await acquireStamp(id);
+      await Promise.all([refetchCp(), refetchSt()]);
+      alert('スタンプゲット！\nおめでとうございます🍶');
+    } catch (err) {
+      alert(`スタンプ取得に失敗しました: ${err.message}`);
+    }
   };
+
+  const isLoading = profileLoading || cpLoading || stLoading || acqLoading;
+  const errorMessage = cpError?.message || stError?.message || acqError?.message;
 
   return (
     <div className="p-4 min-h-screen bg-slate-50">

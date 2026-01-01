@@ -1,5 +1,4 @@
 import React from 'react';
-import { useUserProfile } from '../contexts/UserProfileContext';
 
 /**
  * アプリ全体を覆うフルスクリーンローダー
@@ -7,7 +6,6 @@ import { useUserProfile } from '../contexts/UserProfileContext';
  * - message: 任意の文言
  */
 const FullscreenLoader = ({ show, message = '読み込み中です…' }) => {
-  const { logout } = useUserProfile();
   if (!show) return null;
 
   return (
@@ -15,7 +13,6 @@ const FullscreenLoader = ({ show, message = '読み込み中です…' }) => {
       <div className="flex flex-col items-center gap-3 text-slate-700">
         <div className="h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" aria-label="loading" />
         <p className="text-sm font-medium">{message}</p>
-        <button onClick={logout}>ログアウト</button>
       </div>
     </div>
   );
