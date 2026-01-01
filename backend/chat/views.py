@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from django.db.models import Q
 from .models import Message
+from users.models import Users
 from .serializers import MessageSerializer
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -24,10 +25,10 @@ class MessageViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         sender_id = serializer.validated_data.get('sender_id')
         receiver_id = serializer.validated_data.get('receiver_id')
-        
-        from django.contrib.auth.models import User
-        
-        sender, _ = User.objects.get_or_create(username=sender_id)
-        receiver, _ = User.objects.get_or_create(username=receiver_id)
-        
-        serializer.save(sender_user=sender, receiver_user=receiver)
+
+        # SupabaseのUsersテーブルを参照（存在しない場合はNoneのまま）
+        sender = Users.objects.filter(id=sender_id).first()
+        receiver = Users.objects.filter(id=receiver_id).first()
+
+        # senderをメッセージ所有ユーザーとしても保存しておく
+        serializer.save(sender_user=sender, receiver_user=receiver, user=sender)
