@@ -7,6 +7,8 @@ const StampRally = () => {
   const [spots, setSpots] = useState(STAMP_SPOTS);
   const [activeTab, setActiveTab] = useState('card');
 
+  const { session, profile, loading, error, logout } = useUserProfile();
+
   const collectedCount = spots.filter(s => s.collected).length;
   const progress = (collectedCount / spots.length) * 100;
 
