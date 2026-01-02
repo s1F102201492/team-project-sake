@@ -8,7 +8,6 @@ import { useEffect } from 'react';
 
 const MainLayout = () => {
   const { session, profile, loading, error, logout } = useUserProfile();
-  console.log(profile);
   const displayName = profile?.username || profile?.full_name || session?.user?.email || 'ゲスト';
 
   useEffect(() => {
@@ -16,6 +15,11 @@ const MainLayout = () => {
       alert('ログインに失敗しました。再度お試しください。');
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!profile) return;
+    console.log('profile loaded', profile);
+  }, [profile]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">

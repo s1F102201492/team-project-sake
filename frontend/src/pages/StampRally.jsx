@@ -88,6 +88,7 @@ const StampRally = () => {
   const isLoading = profileLoading || cpLoading || stLoading || acqLoading;
   const errorMessage = cpError?.message || stError?.message || acqError?.message;
 
+  console.log(errorMessage);
   console.log(checkpoints);
   return (
     <div className="p-4 min-h-screen bg-slate-50">

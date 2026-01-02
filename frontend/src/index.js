@@ -6,9 +6,7 @@ import { UserProfileProvider } from './contexts/UserProfileContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <UserProfileProvider>
-      <App />
-    </UserProfileProvider>
-  </React.StrictMode>
+  <UserProfileProvider>
+    <App />
+  </UserProfileProvider>
 );

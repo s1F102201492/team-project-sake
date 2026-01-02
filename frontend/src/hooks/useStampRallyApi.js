@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUserProfile } from '../contexts/UserProfileContext';
 
+const parseJsonSafe = async (res) => {
+  // 204 / 304 などボディ無しレスポンスはそのまま null を返す
+  if (res.status === 204 || res.status === 304) return null;
+  const contentLength = res.headers.get('content-length');
+  if (contentLength === '0') return null;
+  try {
+    return await res.json();
+  } catch (err) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || 'response is not valid JSON');
+  }
+};
+
 /**
  * 共通ヘッダー生成。token / userId が足りない場合は null を返す。
  */
@@ -39,10 +52,16 @@ export const useStampCheckpoints = () => {
     try {
       const res = await fetch('/stamprally/api/checkpoints/', { headers });
       if (!res.ok) {
-        const detail = await res.json().catch(() => ({}));
-        throw new Error(detail?.error || `HTTP ${res.status}`);
+        let message = `HTTP ${res.status}`;
+        try {
+          const detail = await res.json();
+          message = detail?.error || message;
+        } catch (e) {
+          message = e.message || message;
+        }        throw new Error(message);
       }
       const json = await res.json();
+      console.log('fetchCheckpoints json', json);
       setData(json);
       setError(null);
     } catch (err) {
@@ -64,7 +83,7 @@ export const useStampCheckpoints = () => {
  * ログインユーザーの取得済みスタンプ一覧を取得
  */
 export const useUserStamps = () => {
-  const { headers } = useAuthHeaders();
+  const { headers, userId } = useAuthHeaders();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -77,13 +96,25 @@ export const useUserStamps = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('/stamprally/api/stamps/', { headers });
+      const res = await fetch('/stamprally/api/stamps/', 
+        { headers,
+          method: 'GET',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        });
+      
       if (!res.ok) {
-        const detail = await res.json().catch(() => ({}));
-        throw new Error(detail?.error || `HTTP ${res.status}`);
+        let message = `HTTP ${res.status}`;
+        try {
+          const detail = await res.text();
+          message = detail?.error || message;
+        } catch (e) {
+          message = e.message || message;
+        }
+        throw new Error(message);
       }
       const json = await res.json();
-      setData(json);
+      console.log('fetchStamps json', json);
+      setData(Array.isArray(json) ? json : []);
       setError(null);
     } catch (err) {
       setError(err);
@@ -125,8 +156,14 @@ export const useAcquireStamp = () => {
           body: JSON.stringify({ checkpoint: checkpointId, userid: userId }),
         });
         if (!res.ok) {
-          const detail = await res.json().catch(() => ({}));
-          throw new Error(detail?.error || `HTTP ${res.status}`);
+          let message = `HTTP ${res.status}`;
+          try {
+            const detail = await res.json();
+            message = detail?.error || message;
+          } catch (e) {
+            message = e.message || message;
+          }
+          throw new Error(message);
         }
         const json = await res.json();
         return json;

@@ -5,7 +5,7 @@ from django.views.decorators.http import require_GET, require_POST
 from users.models import Users
 from .models import Checkpoint, Stamp
 from .serializers import CheckpointSerializer, StampSerializer
-from api.auth import require_supabase_auth
+from api.auth import require_supabase_auth, safe_get_user
 
 
 def _extract_request_user_id(request, body_data=None):
@@ -20,6 +20,7 @@ def _extract_request_user_id(request, body_data=None):
         user_id = request.GET.get("userid")
     if not user_id and body_data:
         user_id = body_data.get("userid")
+    print('user_id', user_id)
     return user_id
 
 
@@ -37,7 +38,7 @@ def _resolve_user(request, body_data=None):
         return None, None, JsonResponse({"error": "user mismatch"}, status=403)
 
     if explicit_user_id:
-        user_obj = Users.objects.filter(id=explicit_user_id).first()
+        user_obj = safe_get_user(explicit_user_id)
         if user_obj:
             setattr(user_obj, "is_authenticated", True)
         return user_obj, explicit_user_id, None
@@ -45,6 +46,7 @@ def _resolve_user(request, body_data=None):
     if getattr(request, "user", None) and getattr(request.user, "is_authenticated", False):
         return request.user, getattr(request.user, "id", None), None
 
+    print('token_user_id', token_user_id)
     return None, token_user_id, None
 
 
@@ -66,6 +68,7 @@ def index(request):
         "checkpoints": checkpoints,
         "obtained_ids": obtained_ids,
     }
+    print('context', context)
     return render(request, 'stamprally/index.html', context)
 
 
@@ -78,6 +81,7 @@ def checkpoints_list(request):
 
     qs = Checkpoint.objects.all()
     data = CheckpointSerializer(qs, many=True).data
+    print('checkpoints_list data', data)
     return JsonResponse(data, safe=False)
 
 
@@ -93,6 +97,7 @@ def stamps_list(request):
     else:
         stamps = Stamp.objects.filter(user_supa_id=user_id)
     data = StampSerializer(stamps, many=True).data
+    print('stamps_list data', data)
     return JsonResponse(data, safe=False)
 
 
@@ -125,4 +130,5 @@ def stamps_create(request):
 
     stamp = Stamp.objects.create(**filters)
     data = StampSerializer(stamp).data
+    print('stamps_create data', data)
     return JsonResponse(data, status=201)
