@@ -5,7 +5,7 @@ import { useStampCheckpoints, useUserStamps, useAcquireStamp } from '../hooks/us
 import { useUserProfile } from '../contexts/UserProfileContext';
 import useGeolocation from '../hooks/useGeolocation';
 
-const CHECKIN_RADIUS_M = 100; // この距離以内ならチェックイン可（メートル）
+const CHECKIN_RADIUS_M = 1000; // この距離以内ならチェックイン可（メートル）
 
 const toRad = (deg) => (deg * Math.PI) / 180;
 const haversine = (lat1, lng1, lat2, lng2) => {

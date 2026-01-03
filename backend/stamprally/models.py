@@ -11,10 +11,9 @@ class Checkpoint(models.Model):
         return self.name
 
 class Stamp(models.Model):
-    user_supa_id = models.CharField(max_length=255, db_index=True, help_text="Supabase User ID", null=True, blank=True)
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=False, blank=False)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     obtained_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user_supa_id", "checkpoint")
+        unique_together = ("user", "checkpoint")

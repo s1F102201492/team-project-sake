@@ -2,6 +2,7 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from users.models import Users
 from .models import Checkpoint, Stamp
 from .serializers import CheckpointSerializer, StampSerializer
@@ -33,6 +34,8 @@ def _resolve_user(request, body_data=None):
     """
     explicit_user_id = _extract_request_user_id(request, body_data)
     token_user_id = getattr(request, "user_supa_id", None)
+    print('explicit_user_id', explicit_user_id)
+    print('token_user_id', token_user_id)
 
     if explicit_user_id and token_user_id and explicit_user_id != token_user_id:
         return None, None, JsonResponse({"error": "user mismatch"}, status=403)
@@ -101,6 +104,7 @@ def stamps_list(request):
     return JsonResponse(data, safe=False)
 
 
+@csrf_exempt  # Supabase JWT を使うため CSRF を免除
 @require_supabase_auth
 @require_POST
 def stamps_create(request):

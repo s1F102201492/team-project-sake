@@ -152,20 +152,23 @@ export const useAcquireStamp = () => {
       try {
         const res = await fetch('/stamprally/api/stamps/create/', {
           method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
+          headers: { ...headers,
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({ checkpoint: checkpointId, userid: userId }),
         });
         if (!res.ok) {
           let message = `HTTP ${res.status}`;
           try {
-            const detail = await res.json();
+            const detail = await res.text();
             message = detail?.error || message;
           } catch (e) {
             message = e.message || message;
           }
           throw new Error(message);
         }
-        const json = await res.json();
+        const json = await res.text();
+        console.log('acquireStamp json', json);
         return json;
       } catch (err) {
         setError(err);
