@@ -14,11 +14,17 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
-
+env = environ.Env()
+env.read_env(os.path.join(BASE_DIR, ".env"))
+OPENAI_API_KEY = env("OPENAI_API_KEY", default=None)
+OPENAI_API_BASE_URL = env(
+    "OPENAI_API_BASE_URL", default="https://api.openai.iniad.org/api/v1"
+)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -29,7 +35,11 @@ SECRET_KEY = "django-insecure-hqplxj34rzkri=x4!i&b%8-a3xij!**20@!r7f76d)dv15a=3j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "backend",
+]
 
 
 # Application definition
@@ -46,6 +56,8 @@ INSTALLED_APPS = [
     "event",
     "api",
     "ai_recommend",
+    "chat",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -86,7 +98,7 @@ DATABASES = {
     "default": dj_database_url.parse(
         os.environ.get("DATABASE_URL", ""),
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=os.environ.get("DISABLE_SSL") != "true",
     )
 }
 

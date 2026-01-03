@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from users.models import Users
 
 class Checkpoint(models.Model):
     name = models.CharField(max_length=100)
@@ -11,7 +11,7 @@ class Checkpoint(models.Model):
         return self.name
 
 class Stamp(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=False, blank=False)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     obtained_at = models.DateTimeField(auto_now_add=True)
 

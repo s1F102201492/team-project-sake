@@ -28,7 +28,7 @@ docker-compose up backend
 curl -X POST http://localhost:8000/ai_recommend/recommend/ \
   -H "Content-Type: application/json" \
   -d '{
-    "user_supa_id": "123e4567-e89b-12d3-a456-426614174000",
+    "club12321": "123e4567-e89b-12d3-a456-426614174000",
     "preferred_sweetness": 3,
     "preferred_aroma": 4,
     "preferred_region": "新潟県",
