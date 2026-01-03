@@ -4,7 +4,7 @@ import { supabase } from '../supabase';
 const UserProfileContext = createContext({
   session: null,
   profile: null,
-  loading: true,
+  loading: false,
   error: null,
   refreshProfile: async () => {},
   logout: async () => {},
@@ -13,20 +13,16 @@ const UserProfileContext = createContext({
 export const UserProfileProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchProfile = useCallback(async (userId) => {
-    
     if (!userId) {
       setProfile(null);
-      setLoading(false);
       return null;
     }
     
     try {
-      setLoading(true);
-      
       const { data, error: fetchError } = await supabase
         .from('Users')
         .select('id, email, username, prefecture, avatar_url')
@@ -48,14 +44,55 @@ export const UserProfileProvider = ({ children }) => {
       setError(err);
       setProfile(null);
       return null;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
+  const syncSession = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        setError(sessionError);
+        setSession(null);
+        setProfile(null);
+        return;
+      }
 
+      const currentSession = sessionData.session;
+      setSession(currentSession);
+
+      // 未ログインの場合はエラー扱いにせず終了（リダイレクトのみ行う）
+      if (!currentSession) {
+        setProfile(null);
+        setError(null);
+        return;
+      }
+
+      // getUser でユーザー情報を明示取得（セッションと併せて確認）
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setError(userError);
+        setProfile(null);
+        return;
+      }
+
+      setError(null);
+      const supaUserId = userData.user?.id || currentSession?.user?.id;
+      if (supaUserId) {
+        await fetchProfile(supaUserId);
+      } else {
+        setProfile(null);
+      }
+    } catch (err) {
+      setError(err);
+      setSession(null);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
+
+  useEffect(() => {
     const logAuthState = (nextSession) => {
       if (nextSession?.user) {
         console.log(`ログイン状態: ログイン中 (userId=${nextSession.user.id})`);
@@ -64,61 +101,31 @@ export const UserProfileProvider = ({ children }) => {
       }
     };
 
-    const syncSession = async () => {
-      try {
-        setLoading(true);
+    // 初期ロード時に getSession + getUser を実行（1回のみ）
+    syncSession().then((res) => {
+      logAuthState(res?.session);
+    });
+  }, [syncSession]);
 
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (!isMounted) return;
+  // ログイン状態変化を監視し、ログイン後すぐにセッションとプロフィールを同期
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, authSession) => {
+      setLoading(true);
+      setSession(authSession);
 
-        if (sessionError) {
-          setError(sessionError);
-          setSession(null);
-          setProfile(null);
-          setLoading(false);
-          logAuthState(null);
-          return;
-        }
-
-        setSession(data.session);
-        logAuthState(data.session);
-        console.log("datasessionuser:",data.session?.user)
-        if (data.session?.user) {
-          await fetchProfile(data.session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Unexpected error while syncing session', err);
-        setError(err);
-        setSession(null);
+      if (authSession?.user) {
+        await fetchProfile(authSession.user.id);
+        setError(null);
+      } else {
         setProfile(null);
-        setLoading(false);
-        logAuthState(null);
-      } finally {
-        setLoading(false);
+        setError(null);
       }
-    };
 
-    syncSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
-      console.log('[auth change]', event, nextSession);
-      setSession(nextSession);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        if (nextSession?.user) {
-          await fetchProfile(nextSession.user.id);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        setLoading(false);
-      }
+      setLoading(false);
     });
 
     return () => {
-      isMounted = false;
-      listener?.subscription?.unsubscribe();
+      listener?.subscription?.unsubscribe?.();
     };
   }, [fetchProfile]);
 
