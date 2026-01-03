@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
 import { LogIn, User as UserIcon } from 'lucide-react'; // アイコン追加
 import { useUserProfile } from '../contexts/UserProfileContext';
@@ -9,6 +9,9 @@ import { useEffect } from 'react';
 const MainLayout = () => {
   const { session, profile, loading, error, logout } = useUserProfile();
   const displayName = profile?.username || profile?.full_name || session?.user?.email || 'ゲスト';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const showLoader = loading && !profile;
 
   useEffect(() => {
     if (error) {
@@ -17,13 +20,20 @@ const MainLayout = () => {
   }, [error]);
 
   useEffect(() => {
+    // 未ログイン時はログインページへリダイレクト（ただしログインページ自身では実施しない）
+    if (!loading && !session && location.pathname !== '/login') {
+      navigate('/login');
+    }
+  }, [loading, session, location.pathname, navigate]);
+
+  useEffect(() => {
     if (!profile) return;
     console.log('profile loaded', profile);
   }, [profile]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
-      <FullscreenLoader show={loading} message="ユーザー情報を読み込んでいます" />
+      <FullscreenLoader show={showLoader} message="ユーザー情報を読み込んでいます" />
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 py-3">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
