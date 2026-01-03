@@ -1,20 +1,22 @@
 from django.db import models
 
 class Event(models.Model):
-    title = models.CharField(max_length=255, verbose_name="イベントのタイトル")
-    description = models.TextField(verbose_name="概要")
-    start_time = models.DateTimeField(verbose_name="開始時刻")
-    end_time = models.DateTimeField(verbose_name="終了時刻")
+    name = models.CharField(max_length=255, verbose_name="イベント名")  # title -> name
+    description = models.TextField(verbose_name="概要")  # decription -> description (Typo fix)
+    start_date = models.DateTimeField(verbose_name="開始日時")  # start_time -> start_date
+    end_date = models.DateTimeField(verbose_name="終了日時")  # end_time -> end_date
     
     # JSONリスト（例：['ワイン', 'ビール']）を格納
     alcohol_types = models.JSONField(default=list, verbose_name="アルコールのタイプ")
     
-    venue = models.CharField(max_length=200, blank=True, null=True, verbose_name="開催場所")
-    address = models.CharField(max_length=255, verbose_name="イベントの住所")
+    venue = models.CharField(max_length=200, blank=True, null=True, verbose_name="開催場所名")
+    location = models.CharField(max_length=255, verbose_name="開催場所（住所）")  # address -> location
+    
     latitude = models.FloatField(blank=True, null=True, verbose_name="緯度")
     longitude = models.FloatField(blank=True, null=True, verbose_name="経度")
     
     fee = models.CharField(max_length=100, blank=True, null=True, verbose_name="料金")
+    image = models.URLField(blank=True, null=True, verbose_name="画像URL") # 新規追加
     url = models.URLField(blank=True, null=True, verbose_name="イベントのリンク")
     
     # JSONリスト（例：["一人飲み", "初心者歓迎"]）を格納
@@ -27,11 +29,16 @@ class Event(models.Model):
         "api.Sake", blank=True, verbose_name="提供されるお酒"
     )
 
+    # 予約したユーザーのIDリスト（Supabase User ID等）
+    reserved_user_ids = models.JSONField(
+        default=list, blank=True, verbose_name="予約済みユーザーID"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
+    update_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")  # updated_at -> update_at
 
     def __str__(self):
-        return self.title
+        return self.name  # title -> name
 
     class Meta:
         verbose_name = "イベント"
