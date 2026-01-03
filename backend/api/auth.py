@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import JsonResponse
+from django.core.exceptions import ValidationError
 
 # Supabase Auth mock implementation
 # In a real environment, you might verify the JWT signature using Supabase secret or public key
@@ -8,6 +9,17 @@ from django.http import JsonResponse
 import base64
 import json
 from users.models import Users
+
+
+def safe_get_user(user_id):
+    """
+    Users.id は UUIDField だが、外部から渡される ID が UUID でない場合も
+    500 にならないように握りつぶして None を返す。
+    """
+    try:
+        return Users.objects.filter(id=user_id).first()
+    except (ValueError, ValidationError):
+        return None
 
 def get_user_id_from_token(request):
     """
@@ -64,7 +76,7 @@ def require_supabase_auth(view_func):
         request.user_supa_id = user_id
 
         # Supabase Usersテーブルを参照。存在しない場合は匿名扱いで通す。
-        user_obj = Users.objects.filter(id=user_id).first()
+        user_obj = safe_get_user(user_id)
         if user_obj:
             # django.contrib.auth.User 互換の簡易フラグを持たせておく
             setattr(user_obj, "is_authenticated", True)

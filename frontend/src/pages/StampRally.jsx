@@ -1,31 +1,121 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MapPin, Award, CheckCircle2, Navigation, Gift } from 'lucide-react';
-import { STAMP_SPOTS } from '../sampleData';
 import { Link } from 'react-router-dom';
+import { useStampCheckpoints, useUserStamps, useAcquireStamp } from '../hooks/useStampRallyApi';
+import { useUserProfile } from '../contexts/UserProfileContext';
+import useGeolocation from '../hooks/useGeolocation';
+
+const CHECKIN_RADIUS_M = 1000; // この距離以内ならチェックイン可（メートル）
+
+const toRad = (deg) => (deg * Math.PI) / 180;
+const haversine = (lat1, lng1, lat2, lng2) => {
+  const R = 6371000; // 地球半径[m]
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 const StampRally = () => {
-  const [spots, setSpots] = useState(STAMP_SPOTS);
   const [activeTab, setActiveTab] = useState('card');
 
-  const collectedCount = spots.filter(s => s.collected).length;
-  const progress = (collectedCount / spots.length) * 100;
+  const { session, profile, loading: profileLoading } = useUserProfile();
+  const { checkpoints, loading: cpLoading, error: cpError, refetch: refetchCp } = useStampCheckpoints();
+  const { stamps, loading: stLoading, error: stError, refetch: refetchSt } = useUserStamps();
+  const { acquireStamp, loading: acqLoading, error: acqError } = useAcquireStamp();
+  const {
+    position,
+    error: locError,
+    loading: locLoading,
+    requestLocation,
+    isSupported: geolocationSupported,
+  } = useGeolocation();
 
-  const handleCheckIn = (id) => {
-    // In a real app, this would check geolocation
-    setSpots(prev => prev.map(spot => {
-      if (spot.id === id) {
-        return { ...spot, collected: true, collectedAt: new Date().toLocaleDateString() };
+  const spots = useMemo(() => {
+    const obtainedById = new Map();
+    stamps.forEach((s) => {
+      if (s.checkpoint) {
+        obtainedById.set(s.checkpoint, s);
       }
-      return spot;
-    }));
-    alert('スタンプゲット！\nおめでとうございます🍶');
+    });
+    const mapped = checkpoints.map((cp) => {
+      const obtained = obtainedById.get(cp.id);
+      const hasCoords = typeof cp.lat === 'number' && typeof cp.lng === 'number';
+      const distance =
+        position && hasCoords ? haversine(position.lat, position.lng, cp.lat, cp.lng) : null;
+      const canCheckIn = !obtained && distance != null && distance <= CHECKIN_RADIUS_M;
+      return {
+        id: cp.id,
+        name: cp.name,
+        image: cp.img || 'https://placehold.jp/200x200.png',
+        prefecture: '', // データに無いので空にしておく
+        collected: Boolean(obtained),
+        collectedAt: obtained?.obtained_at ? new Date(obtained.obtained_at).toLocaleDateString() : '',
+        distance,
+        canCheckIn,
+      };
+    });
+    // 並び順: 1) 未チェックインで近い 2) チェックイン済 3) 未チェックインで遠い
+    return [...mapped].sort((a, b) => {
+      const score = (spot) => {
+        if (!spot.collected && spot.canCheckIn) return 0;
+        if (spot.collected) return 1;
+        return 2;
+      };
+      const diff = score(a) - score(b);
+      if (diff !== 0) return diff;
+      if (a.distance != null && b.distance != null) return a.distance - b.distance;
+      return 0;
+    });
+  }, [checkpoints, stamps, position]);
+
+  const collectedCount = spots.filter(s => s.collected).length;
+  const progress = spots.length > 0 ? (collectedCount / spots.length) * 100 : 0;
+
+  const handleCheckIn = async (id) => {
+    try {
+      await acquireStamp(id);
+      await Promise.all([refetchCp(), refetchSt()]);
+      alert('スタンプゲット！\nおめでとうございます🍶');
+    } catch (err) {
+      alert(`スタンプ取得に失敗しました: ${err.message}`);
+    }
   };
 
+  const isLoading = profileLoading || cpLoading || stLoading || acqLoading;
+  const errorMessage = cpError?.message || stError?.message || acqError?.message;
+
+  console.log(errorMessage);
+  console.log(checkpoints);
   return (
     <div className="p-4 min-h-screen bg-slate-50">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-800">御酒印帳</h1>
       </div>
+
+      {/* 位置情報取得 */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={requestLocation}
+          className="bg-slate-800 text-white text-xs font-medium py-2 px-3 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={!geolocationSupported || locLoading}
+        >
+          {!geolocationSupported
+            ? '位置情報非対応'
+            : locLoading
+              ? '位置情報取得中…'
+              : '現在地を取得'}
+        </button>
+        {position && (
+          <span className="text-[11px] text-slate-600">
+            lat {position.lat.toFixed(4)}, lng {position.lng.toFixed(4)}（±{Math.round(position.accuracy)}m）
+          </span>
+        )}
+      </div>
+      {locError && <p className="text-[11px] text-red-500 mb-3">{locError}</p>}
 
       {/* Progress Card */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-6">
@@ -97,17 +187,26 @@ const StampRally = () => {
 
               {!spot.collected ? (
                 <button
-                  onClick={() => handleCheckIn(spot.id)}
-                  className="w-full bg-slate-800 text-white text-xs font-medium py-2 rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-1"
+                  onClick={() => spot.canCheckIn ? handleCheckIn(spot.id) : alert('現在地から遠いためチェックインできません')}
+                  className={`w-full text-xs font-medium py-2 rounded-lg flex items-center justify-center gap-1 transition-colors ${spot.canCheckIn
+                    ? 'bg-slate-800 text-white hover:bg-slate-700'
+                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    }`}
+                  disabled={!spot.canCheckIn}
                 >
                   <MapPin size={12} />
-                  チェックイン
+                  {spot.canCheckIn ? 'チェックイン' : '遠いです'}
                 </button>
               ) : (
                 <div className="w-full bg-indigo-50 text-indigo-600 text-xs font-medium py-2 rounded-lg flex items-center justify-center gap-1">
                   <CheckCircle2 size={12} />
                   訪問済み
                 </div>
+              )}
+              {!spot.collected && (
+                <p className="text-[10px] text-slate-500 mt-1">
+                  距離: {spot.distance != null ? `${Math.round(spot.distance)}m` : '距離計算不可'} / 半径 {CHECKIN_RADIUS_M}m
+                </p>
               )}
             </div>
           ))}
