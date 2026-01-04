@@ -22,4 +22,5 @@ urlpatterns = [
     path('ai_recommend/', include('ai_recommend.urls')),
     path('api/', include('api.urls')),
     path('chat/', include('chat.urls')),
+    path('event/', include('event.urls')),
 ]
