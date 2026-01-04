@@ -7,9 +7,7 @@ class Event(models.Model):
     end_date = models.DateTimeField(verbose_name="終了日時")  # end_time -> end_date
     
     # JSONリスト（例：['ワイン', 'ビール']）を格納
-    alcohol_types = models.JSONField(default=list, verbose_name="アルコールのタイプ")
-    
-    venue = models.CharField(max_length=200, blank=True, null=True, verbose_name="開催場所名")
+    alcoholTypes = models.JSONField(default=list, verbose_name="アルコールのタイプ")
     location = models.CharField(max_length=255, verbose_name="開催場所（住所）")  # address -> location
     
     latitude = models.FloatField(blank=True, null=True, verbose_name="緯度")
@@ -26,12 +24,13 @@ class Event(models.Model):
         max_length=255, db_index=True, help_text="Supabase User ID", blank=True, null=True
     )
     sakes_featured = models.ManyToManyField(
-        "api.Sake", blank=True, verbose_name="提供されるお酒"
+        "api.Sake", blank=True, verbose_name="提供されるお酒", null=True
     )
 
     # 予約したユーザーのIDリスト（Supabase User ID等）
     reserved_user_ids = models.JSONField(
-        default=list, blank=True, verbose_name="予約済みユーザーID"
+        default=list, blank=True, verbose_name="予約済みユーザーID", 
+        null=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")

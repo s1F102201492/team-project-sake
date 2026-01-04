@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import StampRally from './pages/StampRally';
 import MainLayout from './layout/MainLayout';
 import Rewards from './pages/Rewards';
+import MyEvents from './pages/MyEvents';
 
 // 1. ルーティングの定義
 // Layoutコンポーネントを親ルート ("/") に設定し、
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
       {
         path: "rewards",
         element: <Rewards />,
+      },
+      {
+        path: "myevents",
+        element: <MyEvents />,
       },
     ],
   },

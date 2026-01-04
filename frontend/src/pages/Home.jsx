@@ -1,29 +1,54 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Search, Wine } from 'lucide-react';
-import { EVENTS } from '../sampleData';
 import EventCard from '../components/EventCard';
+import { useEvents, useReserveEvent } from '../hooks/useEvents';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(null);
+  const { events, loading, error } = useEvents();
+  const { reserveEvent, loading: reserving, error: reserveError } = useReserveEvent();
 
-  // Extract unique tags
-  const allTags = Array.from(new Set(EVENTS.flatMap(e => e.hashtags)));
+  const formatDateTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
 
-  const filteredEvents = EVENTS.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          event.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = selectedTag ? event.hashtags.includes(selectedTag) : true;
-    return matchesSearch && matchesTag;
-  });
+  const allTags = useMemo(() => {
+    return Array.from(
+      new Set(
+        (events || [])
+          .flatMap((e) => e.keywords || e.hashtags || [])
+          .filter(Boolean),
+      ),
+    );
+  }, [events]);
 
-  const handleBooking = () => {
-    // Simulate booking API call
+  const filteredEvents = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return (events || []).filter((event) => {
+      const title = (event.title || event.name || '').toLowerCase();
+      const location = (event.location || event.venue || '').toLowerCase();
+      const matchesSearch = title.includes(term) || location.includes(term);
+      const tags = event.keywords || event.hashtags || [];
+      const matchesTag = selectedTag ? tags.includes(selectedTag) : true;
+      return matchesSearch && matchesTag;
+    });
+  }, [events, searchTerm, selectedTag]);
+
+  const handleBooking = async () => {
     if (!showBookingModal) return;
-    
-    alert(`${showBookingModal.title}の予約が完了しました！\n確認メールをお送りしました。`);
-    setShowBookingModal(null);
+    try {
+      await reserveEvent(showBookingModal.id);
+      alert(`${showBookingModal.title || showBookingModal.name}の予約が完了しました！`);
+      setShowBookingModal(null);
+    } catch (err) {
+      alert(reserveError?.message || err.message || '予約に失敗しました');
+    }
   };
 
   return (
@@ -36,14 +61,6 @@ const Home = () => {
           <p className="text-indigo-100 text-sm mb-4">
             あなたの街の酒蔵巡りや、<br/>特別な試飲イベントを見つけましょう。
           </p>
-          <div className="flex gap-2">
-            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              新着イベント
-            </button>
-            <button className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-50 transition-colors">
-              酒蔵マップ
-            </button>
-          </div>
         </div>
       </div>
 
@@ -98,13 +115,39 @@ const Home = () => {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filteredEvents.map(event => (
-            <EventCard 
-              key={event.id} 
-              event={event} 
-              onClick={() => setShowBookingModal(event)} 
-            />
-          ))}
+          {loading && (
+            <div className="col-span-full text-center py-10 text-slate-400">
+              <p>読み込み中...</p>
+            </div>
+          )}
+          {error && (
+            <div className="col-span-full text-center py-10 text-red-500">
+              <p>イベントの取得に失敗しました: {error.message}</p>
+            </div>
+          )}
+          {!loading && !error && filteredEvents.map(event => {
+            const reservedCount = Array.isArray(event.reserved_user_ids)
+              ? event.reserved_user_ids.length
+              : 0;
+            const dateText = formatDateTime(event.date || event.start_date);
+            return (
+              <EventCard 
+                key={event.id} 
+                event={{
+                  ...event,
+                  // EventCard が期待する項目に合わせてフォールバック
+                  title: event.title || event.name,
+                  date: dateText,
+                  price: Number(event.price ?? event.fee ?? 0) || 0,
+                  image: event.image,
+                  hashtags: event.hashtags || event.keywords || [],
+                  reservedCount,
+                  location: event.location || event.venue || '',
+                }} 
+                onClick={() => setShowBookingModal(event)} 
+              />
+            );
+          })}
           
           {filteredEvents.length === 0 && (
             <div className="col-span-full text-center py-10 text-slate-400">
@@ -124,13 +167,17 @@ const Home = () => {
           <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 relative animate-in slide-in-from-bottom duration-200 shadow-2xl">
             <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 sm:hidden"></div>
             
-            <h3 className="text-xl font-bold text-slate-900 mb-2">{showBookingModal.title}</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              {showBookingModal.title || showBookingModal.name}
+            </h3>
             <p className="text-sm text-slate-500 mb-6">{showBookingModal.description}</p>
             
             <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">日時</span>
-                <span className="font-medium">{showBookingModal.date}</span>
+                <span className="font-medium">
+                  {formatDateTime(showBookingModal.date || showBookingModal.start_date)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">場所</span>
@@ -138,15 +185,18 @@ const Home = () => {
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2 mt-2">
                 <span className="text-slate-500">合計金額</span>
-                <span className="font-bold text-lg text-indigo-600">¥{showBookingModal.price.toLocaleString()}</span>
+                <span className="font-bold text-lg text-indigo-600">
+                  ¥{(showBookingModal.price || showBookingModal.fee || 0).toLocaleString()}
+                </span>
               </div>
             </div>
 
             <button 
               onClick={handleBooking}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all"
+              disabled={reserving}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              予約を確定する
+              {reserving ? '予約処理中...' : '予約を確定する'}
             </button>
             <button 
               onClick={() => setShowBookingModal(null)}

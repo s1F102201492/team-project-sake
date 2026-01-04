@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
-import { LogIn, User as UserIcon } from 'lucide-react'; // アイコン追加
+import { CalendarClock, LogIn, User as UserIcon } from 'lucide-react'; // アイコン追加
 import { useUserProfile } from '../contexts/UserProfileContext';
 import FullscreenLoader from '../components/FullscreenLoader';
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const showLoader = loading && !profile;
+  const isMyEventsActive = location.pathname === '/myevents';
 
   useEffect(() => {
     if (error) {
@@ -55,6 +56,20 @@ const MainLayout = () => {
               <span className="text-sm font-bold text-slate-700">
                 {displayName}
               </span>
+              {/* My Events Shortcut Button */}
+              <Link
+                to="/myevents" 
+                className={`p-2 rounded-full transition-all relative group ${
+                  isMyEventsActive 
+                    ? 'bg-indigo-50 text-indigo-600' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+                title="予約済みイベント"
+              >
+                <CalendarClock size={20} strokeWidth={isMyEventsActive ? 2.5 : 2} />
+                {/* 予約があることを示すドット（デモ用） */}
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white"></span>
+              </Link>
               <button
                 onClick={logout}
                 className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full hover:bg-indigo-100 transition-colors border border-indigo-100"

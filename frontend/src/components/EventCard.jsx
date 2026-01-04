@@ -2,6 +2,8 @@ import React from 'react';
 import { Calendar, MapPin, Users } from 'lucide-react';
 
 const EventCard = ({ event, onClick }) => {
+  const reservedLabel = `${event.reservedCount ?? 0}人が予約済み`;
+
   return (
     <div 
       onClick={onClick}
@@ -18,13 +20,15 @@ const EventCard = ({ event, onClick }) => {
         </div>
       </div>
       <div className="p-4">
-        <div className="flex flex-wrap gap-1 mb-2">
-          {event.hashtags.slice(0, 3).map(tag => (
-            <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {event.hashtags?.length ? (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {event.hashtags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
         <h3 className="font-bold text-slate-800 text-lg mb-2 leading-tight">{event.title}</h3>
         
         <div className="space-y-1 text-sm text-slate-500">
@@ -38,9 +42,7 @@ const EventCard = ({ event, onClick }) => {
           </div>
           <div className="flex items-center gap-1.5">
              <Users size={14} />
-             <span className={event.availableSeats < 5 ? "text-red-500 font-medium" : ""}>
-               残り {event.availableSeats} 席
-             </span>
+             <span>{reservedLabel}</span>
           </div>
         </div>
       </div>
